@@ -27,7 +27,7 @@
 #include "utlist.h"
 
 #include "dap_common.h"
-#include "config.h"
+#include "../sources/config.h"
 
 #include "dap_client.h"
 #include "dap_http_client.h"
@@ -37,7 +37,7 @@
 #include "stream_ch_proc.h"
 #include "stream_ch_pkt.h"
 
-#include "ch_sf.h"
+//#include "ch_sf.h"
 
 #define LOG_TAG "ch_sf"
 
@@ -229,7 +229,7 @@ void ch_sf_tun_create()
         raw_server->tun_ctl_fd=-1;
     }else{
         char buf[256];
-        log_it(NOTICE,"Bringed up %s virtual network interface (%s/%s)", raw_server->ifr.ifr_name,inet_ntoa(raw_server->client_addr_host),my_config.vpn_mask);
+        log_it(L_NOTICE,"Bringed up %s virtual network interface (%s/%s)", raw_server->ifr.ifr_name,inet_ntoa(raw_server->client_addr_host),my_config.vpn_mask);
         raw_server->tun_fd= raw_server->tun_ctl_fd; // Looks yes, its so
         snprintf(buf,sizeof(buf),"ip link set %s up",raw_server->ifr.ifr_name);
         system(buf);
@@ -452,7 +452,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                     HASH_ADD_INT(raw_server->clients, addr,n_client);
                     pthread_mutex_unlock(& raw_server->clients_mutex );
 
-                    log_it(NOTICE,"VPN client address %s leased", inet_ntoa(n_addr));
+                    log_it(L_NOTICE,"VPN client address %s leased", inet_ntoa(n_addr));
                     log_it(L_INFO,"\tgateway %s", inet_ntoa(raw_server->client_addr_host));
                     log_it(L_INFO,"\tmask %s", inet_ntoa(raw_server->client_addr_mask));
                     log_it(L_INFO,"\taddr %s", inet_ntoa(raw_server->client_addr));
@@ -549,7 +549,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                                     log_it(L_ERROR,"Can't remove sock_id %d from the epoll fd",remote_sock_id);
                                     //stream_ch_pkt_write_f(ch,'i',"sock_id=%d op_code=0x%02x result=-2",sf_pkt->sock_id, sf_pkt->op_code);
                             }else{
-                                    log_it(NOTICE,"Removed sock_id %d from the the epoll fd",remote_sock_id);
+                                    log_it(L_NOTICE,"Removed sock_id %d from the the epoll fd",remote_sock_id);
                                     //stream_ch_pkt_write_f(ch,'i',"sock_id=%d op_code=0x%02x result=0",sf_pkt->sock_id, sf_pkt->op_code);
                             }
                             pthread_mutex_unlock(& sf_socks_mutex );
@@ -579,7 +579,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                         log_it(L_ERROR,"Can't remove sock_id %d to the epoll fd",remote_sock_id);
                         //stream_ch_pkt_write_f(ch,'i',"sock_id=%d op_code=%uc result=-2",sf_pkt->sock_id, sf_pkt->op_code);
                     }else{
-                        log_it(NOTICE,"Removed sock_id %d from the epoll fd",remote_sock_id);
+                        log_it(L_NOTICE,"Removed sock_id %d from the epoll fd",remote_sock_id);
                         //stream_ch_pkt_write_f(ch,'i',"sock_id=%d op_code=%uc result=0",sf_pkt->sock_id, sf_pkt->op_code);
                     }
                     pthread_mutex_unlock(&sf_socks_mutex);
@@ -647,8 +647,8 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                         log_it(L_ERROR,"Can't add sock_id %d to the epoll fd",remote_sock_id);
                 //stream_ch_pkt_write_f(ch,'i',"sock_id=%d op_code=%uc result=-2",sf_pkt->sock_id, sf_pkt->op_code);
                     }else{
-                        log_it(NOTICE,"Added sock_id %d  with sock %d to the epoll fd",remote_sock_id,s);
-                        log_it(NOTICE, "Send Connected packet to User");
+                        log_it(L_NOTICE,"Added sock_id %d  with sock %d to the epoll fd",remote_sock_id,s);
+                        log_it(L_NOTICE, "Send Connected packet to User");
                         ch_sf_pkt_t *pkt_out = (ch_sf_pkt_t*) calloc(1,sizeof(pkt_out->header));
                         pkt_out->header.sock_id = remote_sock_id;
                         pkt_out->header.op_code = STREAM_SF_PACKET_OP_CODE_CONNECTED;
@@ -738,7 +738,7 @@ void * ch_sf_thread(void * arg)
             pthread_mutex_unlock(&sf_socks_mutex);
             if(sf){
                 if(events[n].events & EPOLLERR ){
-                    log_it(NOTICE,"Socket id %d has EPOLLERR flag on",s);
+                    log_it(L_NOTICE,"Socket id %d has EPOLLERR flag on",s);
                     pthread_mutex_lock(& (sf->mutex) );
                     stream_sf_disconnect(sf);
                     pthread_mutex_unlock(& (sf->mutex) );
@@ -762,7 +762,7 @@ void * ch_sf_thread(void * arg)
                             pthread_mutex_unlock(& (sf->mutex) );
                             stream_sf_socket_ready_to_write(sf->ch,true);
                         }else{
-                            log_it(NOTICE,"Socket id %d returned error on recv() function - may be host has disconnected",s);
+                            log_it(L_NOTICE,"Socket id %d returned error on recv() function - may be host has disconnected",s);
                             pthread_mutex_unlock(& (sf->mutex) );
                             stream_sf_socket_ready_to_write(sf->ch,true);
                             stream_sf_disconnect(sf);
@@ -778,7 +778,7 @@ void * ch_sf_thread(void * arg)
                 if (epoll_ctl(sf_socks_epoll_fd, EPOLL_CTL_DEL, s, &ev) < 0) {
                     log_it(L_ERROR,"Can't remove sock_id %d to the epoll fd",s);
                 }else {
-                    log_it(NOTICE,"Socket id %d is removed from the list",s);
+                    log_it(L_NOTICE,"Socket id %d is removed from the list",s);
                 }
             }
         }
@@ -889,7 +889,7 @@ void* ch_sf_thread_raw(void *arg)
             break;
         }
     }while(1);
-    log_it(NOTICE,"Raw sockets listen thread is stopped");
+    log_it(L_NOTICE,"Raw sockets listen thread is stopped");
     ch_sf_tun_destroy();
     return NULL;
 }
@@ -935,7 +935,7 @@ void ch_sf_packet_out(stream_ch_t* ch , void* arg)
         }
         cur->pkt_out_size=0;
         if(cur->signal_to_delete){
-            log_it(NOTICE,"Socket id %d got signal to be deleted", cur->id);
+            log_it(L_NOTICE,"Socket id %d got signal to be deleted", cur->id);
             pthread_mutex_lock(&( CH_SF(ch)->mutex ));
             HASH_DEL(CH_SF(ch)->socks,cur);
             pthread_mutex_unlock(&( CH_SF(ch)->mutex ));
