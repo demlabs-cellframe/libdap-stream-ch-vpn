@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project (dapmodvpn)
   
-set(VPN_SRCS ch_sf.c )
+set(VPN_SRCS dap_stream_ch_vpn.c )
 add_library(${PROJECT_NAME} STATIC ${VPN_SRCS})
 
 include_directories("${INCLUDE_DIRECTORIES} ${dap_core_INCLUDE_DIRS}")
@@ -14,6 +14,8 @@ include_directories("${INCLUDE_DIRECTORIES} ${dap_http_INCLUDE_DIRS}")
 include_directories("${INCLUDE_DIRECTORIES} ${dap_http_server_INCLUDE_DIRS}")
 include_directories("${INCLUDE_DIRECTORIES} ${dap_session_INCLUDE_DIRS}")
 include_directories("${INCLUDE_DIRECTORIES} ${dap_stream_INCLUDE_DIRS}")
+include_directories("${INCLUDE_DIRECTORIES} ${dap_udp_server_INCLUDE_DIRS}")
+include_directories("${INCLUDE_DIRECTORIES} ${dap_mod_ch_sf_INCLUDE_DIRS}")
 
 add_definitions ("${dap_core_DEFINITIONS}")
 add_definitions ("${dap_core_server_DEFINITIONS}")
@@ -25,6 +27,8 @@ add_definitions ("${dap_auth_DEFINITIONS}")
 add_definitions ("${dap_http_DEFINITIONS}")
 add_definitions ("${dap_stream_DEFINITIONS}")
 add_definitions ("${dap_session_DEFINITIONS}")
+add_definitions ("${dap_udp_server_DEFINITIONS}")
+add_definitions ("${dap_mod_ch_sf_DEFINITIONS}")
 
 set(${PROJECT_NAME}_DEFINITIONS CACHE INTERNAL "${PROJECT_NAME}: Definitions" FORCE)
 set(${PROJECT_NAME}_INCLUDE_DIRS ${PROJECT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
