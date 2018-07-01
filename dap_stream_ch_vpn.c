@@ -493,8 +493,8 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                 sin.sin_port = 0;
                 sin.sin_addr.s_addr = in_daddr.s_addr;
 
-                if((ret=sendto(CH_SF(ch)->raw_l3_sock , sf_pkt->data,sf_pkt->header.op_data.data_size,0,(struct sockaddr *) &sin, sizeof (sin)))<0){
-                //    if((ret = write(raw_server->tun_fd, sf_pkt->data, sf_pkt->header.op_data.data_size))<0){
+                //if((ret=sendto(CH_SF(ch)->raw_l3_sock , sf_pkt->data,sf_pkt->header.op_data.data_size,0,(struct sockaddr *) &sin, sizeof (sin)))<0){
+                if((ret = write(raw_server->tun_fd, sf_pkt->data, sf_pkt->header.op_data.data_size))<0){
                     log_it(L_ERROR,"write() returned error %d : '%s'",ret,strerror(errno));
                         //log_it(L_ERROR,"raw socket ring buffer overflowed");
                     ch_sf_pkt_t *pkt_out = (ch_sf_pkt_t*) calloc(1,sizeof(pkt_out->header));
@@ -504,9 +504,9 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                     stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                     stream_sf_socket_ready_to_write(ch,true);
                 }else{
-                //log_it(L_DEBUG, "Raw IP packet daddr:%s saddr:%s  %u from %d bytes sent to tun/tap interface",
-                //     str_saddr,str_daddr, sf_pkt->header.op_data.data_size,ret);
-                //log_it(L_DEBUG,"Raw IP sent %u bytes ",ret);
+               // log_it(L_DEBUG, "Raw IP packet daddr:%s saddr:%s  %u from %d bytes sent to tun/tap interface",
+                     //str_saddr,str_daddr, sf_pkt->header.op_data.data_size,ret);                     
+               // log_it(L_DEBUG,"Raw IP sent %u bytes ",ret);
                 }
             //}
             }break;
