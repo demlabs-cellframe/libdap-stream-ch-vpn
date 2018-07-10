@@ -4,6 +4,8 @@ project (dapmodvpn)
 set(VPN_SRCS dap_stream_ch_vpn.c )
 add_library(${PROJECT_NAME} STATIC ${VPN_SRCS})
 
+include_directories("${INCLUDE_DIRECTORIES} ${dap_core_server_INCLUDE_DIRS}/client")
+include_directories("${INCLUDE_DIRECTORIES} ${dap_http_server_INCLUDE_DIRS}/http_client")
 include_directories("${INCLUDE_DIRECTORIES} ${dap_core_INCLUDE_DIRS}")
 include_directories("${INCLUDE_DIRECTORIES} ${dap_core_server_INCLUDE_DIRS}")
 include_directories("${INCLUDE_DIRECTORIES} ${dap_crypto_INCLUDE_DIRS}")
