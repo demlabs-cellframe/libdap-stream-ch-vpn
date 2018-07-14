@@ -32,8 +32,4 @@ add_definitions ("${dap_session_DEFINITIONS}")
 add_definitions ("${dap_udp_server_DEFINITIONS}")
 add_definitions ("${dap_mod_ch_sf_DEFINITIONS}")
 
-target_link_libraries(dapmodvpn dap_core)
-target_link_libraries(dapmodvpn dap_crypto)
-
-set(${PROJECT_NAME}_DEFINITIONS CACHE INTERNAL "${PROJECT_NAME}: Definitions" FORCE)
-set(${PROJECT_NAME}_INCLUDE_DIRS ${PROJECT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
+target_link_libraries(dapmodvpn dap_core dap_crypto dap_core_server)
