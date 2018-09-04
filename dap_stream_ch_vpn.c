@@ -27,7 +27,6 @@
 #include "utlist.h"
 
 #include "dap_common.h"
-#include "../sources/config.h"
 
 #include "dap_client.h"
 #include "dap_http_client.h"
@@ -36,8 +35,6 @@
 #include "stream_ch.h"
 #include "stream_ch_proc.h"
 #include "stream_ch_pkt.h"
-
-//#include "ch_sf.h"
 
 #define LOG_TAG "ch_sf"
 
@@ -181,13 +178,16 @@ int ch_sf_raw_write(uint8_t op_code, const void * data, size_t data_size);
 void stream_sf_disconnect(ch_sf_socket_t * sf_sock);
 
 
-
+static const char *l_vpn_addr, *l_vpn_mask;
 /**
  * @brief ch_sf_init
  * @return
  */
-int ch_sf_init()
+int ch_sf_init(const char* vpn_addr, const char* vpn_mask)
 {
+    l_vpn_addr = strdup(vpn_addr);
+    l_vpn_mask = strdup(vpn_mask);
+
     raw_server=calloc(1,sizeof(ch_sf_raw_server_t));
     pthread_mutex_init(&raw_server->clients_mutex,NULL);
     pthread_mutex_init(&raw_server->pkt_out_mutex,NULL);
@@ -206,14 +206,16 @@ void ch_sf_deinit()
 {
     pthread_mutex_destroy(&sf_socks_mutex);
     pthread_cond_destroy(&sf_socks_cond);
+    free((char*)l_vpn_addr);
+    free((char*)l_vpn_mask);
     if (raw_server)
-    free(raw_server);
+        free(raw_server);
 }
 
 void ch_sf_tun_create()
 {
-    inet_aton(my_config.vpn_addr, & raw_server->client_addr );
-    inet_aton(my_config.vpn_mask, & raw_server->client_addr_mask );
+    inet_aton(l_vpn_addr, & raw_server->client_addr );
+    inet_aton(l_vpn_mask, & raw_server->client_addr_mask );
     raw_server->client_addr_host.s_addr= (raw_server->client_addr.s_addr | 0x01000000); // grow up some shit here!
     raw_server->client_addr_last.s_addr = raw_server->client_addr_host.s_addr;
 
@@ -229,11 +231,11 @@ void ch_sf_tun_create()
         raw_server->tun_ctl_fd=-1;
     }else{
         char buf[256];
-        log_it(L_NOTICE,"Bringed up %s virtual network interface (%s/%s)", raw_server->ifr.ifr_name,inet_ntoa(raw_server->client_addr_host),my_config.vpn_mask);
+        log_it(L_NOTICE,"Bringed up %s virtual network interface (%s/%s)", raw_server->ifr.ifr_name,inet_ntoa(raw_server->client_addr_host),l_vpn_mask);
         raw_server->tun_fd= raw_server->tun_ctl_fd; // Looks yes, its so
         snprintf(buf,sizeof(buf),"ip link set %s up",raw_server->ifr.ifr_name);
         system(buf);
-        snprintf(buf,sizeof(buf),"ip addr add %s/%s dev %s ",inet_ntoa(raw_server->client_addr_host),my_config.vpn_mask, raw_server->ifr.ifr_name );
+        snprintf(buf,sizeof(buf),"ip addr add %s/%s dev %s ",inet_ntoa(raw_server->client_addr_host),l_vpn_mask, raw_server->ifr.ifr_name );
         system(buf);
     }
   }
