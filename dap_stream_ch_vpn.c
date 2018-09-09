@@ -32,9 +32,9 @@
 #include "dap_http_client.h"
 
 #include "stream.h"
-#include "stream_ch.h"
-#include "stream_ch_proc.h"
-#include "stream_ch_pkt.h"
+#include "dap_stream_ch.h"
+#include "dap_stream_ch_proc.h"
+#include "dap_stream_ch_pkt.h"
 
 #define LOG_TAG "stream_ch_vpn"
 
@@ -194,12 +194,12 @@ void stream_sf_disconnect(ch_vpn_socket_proxy_t * sf_sock);
 static const char *l_vpn_addr, *l_vpn_mask;
 
 /**
- * @brief ch_sf_init Init actions for VPN stream channel
+ * @brief dap_stream_ch_vpn_init Init actions for VPN stream channel
  * @param vpn_addr Zero if only client mode. Address if the node shares its local VPN
  * @param vpn_mask Zero if only client mode. Mask if the node shares its local VPN
  * @return 0 if everything is okay, lesser then zero if errors
  */
-int ch_sf_init(const char* vpn_addr, const char* vpn_mask)
+int dap_stream_ch_vpn_init(const char* vpn_addr, const char* vpn_mask)
 {
 
     if (vpn_addr && vpn_mask) {
@@ -222,7 +222,7 @@ int ch_sf_init(const char* vpn_addr, const char* vpn_mask)
 /**
  * @brief ch_sf_deinit
  */
-void ch_sf_deinit()
+void dap_stream_ch_vpn_deinit()
 {
     pthread_mutex_destroy(&sf_socks_mutex);
     pthread_cond_destroy(&sf_socks_cond);
