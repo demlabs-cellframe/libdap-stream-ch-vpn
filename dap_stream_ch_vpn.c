@@ -36,26 +36,26 @@
 #include "stream_ch_proc.h"
 #include "stream_ch_pkt.h"
 
-#define LOG_TAG "ch_sf"
+#define LOG_TAG "stream_ch_vpn"
 
-#define STREAM_SF_PACKET_OP_CODE_CONNECTED 0x000000a9
-#define STREAM_SF_PACKET_OP_CODE_CONNECT 0x000000aa
-#define STREAM_SF_PACKET_OP_CODE_DISCONNECT 0x000000ab
-#define STREAM_SF_PACKET_OP_CODE_SEND 0x000000ac
-#define STREAM_SF_PACKET_OP_CODE_RECV 0x000000ad
-#define STREAM_SF_PACKET_OP_CODE_PROBLEM  0x000000ae
+#define VPN_PACKET_OP_CODE_CONNECTED 0x000000a9
+#define VPN_PACKET_OP_CODE_CONNECT 0x000000aa
+#define VPN_PACKET_OP_CODE_DISCONNECT 0x000000ab
+#define VPN_PACKET_OP_CODE_SEND 0x000000ac
+#define VPN_PACKET_OP_CODE_RECV 0x000000ad
+#define VPN_PACKET_OP_CODE_PROBLEM  0x000000ae
 
-#define STREAM_SF_PROBLEM_CODE_NO_FREE_ADDR 0x00000001
-#define STREAM_SF_PROBLEM_CODE_TUNNEL_DOWN  0x00000002
-#define STREAM_SF_PROBLEM_CODE_PACKET_LOST  0x00000003
+#define VPN_PROBLEM_CODE_NO_FREE_ADDR 0x00000001
+#define VPN_PROBLEM_CODE_TUNNEL_DOWN  0x00000002
+#define VPN_PROBLEM_CODE_PACKET_LOST  0x00000003
 
-#define STREAM_SF_PACKET_OP_CODE_RAW_L3 0x000000b0
-#define STREAM_SF_PACKET_OP_CODE_RAW_L2 0x000000b1
-#define STREAM_SF_PACKET_OP_CODE_RAW_L3_ADDR_REQUEST 0x000000b2
-#define STREAM_SF_PACKET_OP_CODE_RAW_L3_ADDR_REPLY 0x000000b3
+#define VPN_PACKET_OP_CODE_VPN_METADATA 0x000000b0
+#define VPN_PACKET_OP_CODE_VPN_RESERVED 0x000000b1
+#define VPN_PACKET_OP_CODE_VPN_ADDR_REQUEST 0x000000b2
+#define VPN_PACKET_OP_CODE_VPN_ADDR_REPLY 0x000000b3
 
-#define STREAM_SF_PACKET_OP_CODE_RAW_SEND 0x000000bc
-#define STREAM_SF_PACKET_OP_CODE_RAW_RECV 0x000000bd
+#define VPN_PACKET_OP_CODE_VPN_SEND 0x000000bc
+#define VPN_PACKET_OP_CODE_VPN_RECV 0x000000bd
 
 #define SF_MAX_EVENTS 256
 
@@ -86,6 +86,13 @@ typedef struct ch_vpn_pkt{
     uint8_t data[]; // Binary data nested by packet
 }  __attribute__((packed)) ch_vpn_pkt_t;
 
+
+/**
+  * @struct ch_vpn_socket_proxy
+  * @brief Internal data storage for single socket proxy functions. Usualy helpfull for\
+  *        port forwarding or for protecting single application's connection
+  *
+  **/
 typedef struct ch_vpn_socket_proxy{
     int id;
     int sock;
@@ -108,6 +115,12 @@ typedef struct ch_vpn_socket_proxy{
      UT_hash_handle hh_sock;
 } ch_vpn_socket_proxy_t;
 
+/**
+  * @struct dap_stream_ch_vpn
+  * @brief Object that creates for every remote channel client
+  *
+  *
+  **/
 typedef struct dap_stream_ch_vpn
 {
     pthread_mutex_t mutex;
@@ -179,23 +192,30 @@ void stream_sf_disconnect(ch_vpn_socket_proxy_t * sf_sock);
 
 
 static const char *l_vpn_addr, *l_vpn_mask;
+
 /**
- * @brief ch_sf_init
- * @return
+ * @brief ch_sf_init Init actions for VPN stream channel
+ * @param vpn_addr Zero if only client mode. Address if the node shares its local VPN
+ * @param vpn_mask Zero if only client mode. Mask if the node shares its local VPN
+ * @return 0 if everything is okay, lesser then zero if errors
  */
 int ch_sf_init(const char* vpn_addr, const char* vpn_mask)
 {
-    l_vpn_addr = strdup(vpn_addr);
-    l_vpn_mask = strdup(vpn_mask);
 
-    raw_server=calloc(1,sizeof(vpn_local_network_t));
-    pthread_mutex_init(&raw_server->clients_mutex,NULL);
-    pthread_mutex_init(&raw_server->pkt_out_mutex,NULL);
-    pthread_mutex_init(&sf_socks_mutex,NULL);
-    pthread_cond_init(&sf_socks_cond,NULL);
-    pthread_create(&sf_socks_raw_pid,NULL,ch_sf_thread_raw,NULL);
-    pthread_create(&sf_socks_pid,NULL,ch_sf_thread,NULL);
-    stream_ch_proc_add('s',ch_sf_new,ch_sf_delete,ch_sf_packet_in,ch_sf_packet_out);
+    if (vpn_addr && vpn_mask) {
+        l_vpn_addr = strdup(vpn_addr);
+        l_vpn_mask = strdup(vpn_mask);
+
+        raw_server=calloc(1,sizeof(vpn_local_network_t));
+        pthread_mutex_init(&raw_server->clients_mutex,NULL);
+        pthread_mutex_init(&raw_server->pkt_out_mutex,NULL);
+        pthread_mutex_init(&sf_socks_mutex,NULL);
+        pthread_cond_init(&sf_socks_cond,NULL);
+        pthread_create(&sf_socks_raw_pid,NULL,ch_sf_thread_raw,NULL);
+        pthread_create(&sf_socks_pid,NULL,ch_sf_thread,NULL);
+        stream_ch_proc_add('s',ch_sf_new,ch_sf_delete,ch_sf_packet_in,ch_sf_packet_out);
+        return 0;
+    }
     return 0;
 }
 
@@ -383,7 +403,7 @@ int stream_sf_socket_write(ch_vpn_socket_proxy_t * sf, uint8_t op_code, const vo
         pkt->header.sock_id=sf->id;
 
         switch(op_code){
-            case STREAM_SF_PACKET_OP_CODE_RECV:{
+            case VPN_PACKET_OP_CODE_RECV:{
                 pkt->header.op_data.data_size=data_size;
                 memcpy(pkt->data,data,data_size);
             }break;
@@ -421,7 +441,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
 //    log_it(L_DEBUG,"Got SF packet with id %d op_code 0x%02x",remote_sock_id, sf_pkt->header.op_code );
     if(sf_pkt->header.op_code >= 0xb0){ // Raw packets
         switch(sf_pkt->header.op_code){
-            case STREAM_SF_PACKET_OP_CODE_RAW_L3_ADDR_REQUEST:{ // Client request after L3 connection the new IP address
+            case VPN_PACKET_OP_CODE_VPN_ADDR_REQUEST:{ // Client request after L3 connection the new IP address
             log_it(L_DEBUG,"Got SF packet with id %d op_code 0x%02x",remote_sock_id, sf_pkt->header.op_code );
                 struct in_addr n_addr={0};
 
@@ -462,7 +482,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
 
                     ch_vpn_pkt_t *pkt_out = (ch_vpn_pkt_t*) calloc(1,sizeof(pkt_out->header)+sizeof(n_addr)+sizeof(raw_server->client_addr_host));
                     pkt_out->header.sock_id=raw_server->tun_fd;
-                    pkt_out->header.op_code=STREAM_SF_PACKET_OP_CODE_RAW_L3_ADDR_REPLY;
+                    pkt_out->header.op_code=VPN_PACKET_OP_CODE_VPN_ADDR_REPLY;
                     pkt_out->header.op_data.data_size=sizeof(n_addr)+sizeof(raw_server->client_addr_host);
                     memcpy(pkt_out->data,&n_addr,sizeof(n_addr));
                     memcpy(pkt_out->data+sizeof(n_addr),&raw_server->client_addr_host,sizeof(raw_server->client_addr_host));
@@ -474,13 +494,13 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                     log_it(L_WARNING,"All the network is filled with clients, can't lease a new address");
                     ch_vpn_pkt_t *pkt_out = (ch_vpn_pkt_t*) calloc(1,sizeof(pkt_out->header));
                     pkt_out->header.sock_id=raw_server->tun_fd;
-                    pkt_out->header.op_code=STREAM_SF_PACKET_OP_CODE_PROBLEM;
-                    pkt_out->header.op_problem.code=STREAM_SF_PROBLEM_CODE_NO_FREE_ADDR;
+                    pkt_out->header.op_code=VPN_PACKET_OP_CODE_PROBLEM;
+                    pkt_out->header.op_problem.code=VPN_PROBLEM_CODE_NO_FREE_ADDR;
                     stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                     stream_sf_socket_ready_to_write(ch,true);
                 }
             }break;
-            case STREAM_SF_PACKET_OP_CODE_RAW_SEND:{
+            case VPN_PACKET_OP_CODE_VPN_SEND:{
                 struct in_addr in_saddr,in_daddr;
                 in_saddr.s_addr=((struct iphdr*) sf_pkt->data)->saddr;
                 in_daddr.s_addr=((struct iphdr*) sf_pkt->data)->daddr;
@@ -500,8 +520,8 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                     log_it(L_ERROR,"write() returned error %d : '%s'",ret,strerror(errno));
                         //log_it(L_ERROR,"raw socket ring buffer overflowed");
                     ch_vpn_pkt_t *pkt_out = (ch_vpn_pkt_t*) calloc(1,sizeof(pkt_out->header));
-                    pkt_out->header.op_code=STREAM_SF_PACKET_OP_CODE_PROBLEM;
-                    pkt_out->header.op_problem.code=STREAM_SF_PROBLEM_CODE_PACKET_LOST;
+                    pkt_out->header.op_code=VPN_PACKET_OP_CODE_PROBLEM;
+                    pkt_out->header.op_problem.code=VPN_PROBLEM_CODE_PACKET_LOST;
                     pkt_out->header.sock_id=raw_server->tun_fd;
                     stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                     stream_sf_socket_ready_to_write(ch,true);
@@ -516,7 +536,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
         }
     }else{  // All except CONNECT
         ch_vpn_socket_proxy_t * sf_sock=NULL;
-        if(sf_pkt->header.op_code != STREAM_SF_PACKET_OP_CODE_CONNECT ){
+        if(sf_pkt->header.op_code != VPN_PACKET_OP_CODE_CONNECT ){
             pthread_mutex_lock(& ( CH_SF(ch)->mutex ));
     //	    log_it(L_DEBUG,"Looking in hash table with %d",remote_sock_id);
             HASH_FIND_INT( (CH_SF(ch)->socks) ,&remote_sock_id,sf_sock );
@@ -525,7 +545,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                 pthread_mutex_lock(&sf_sock->mutex); // Unlock it in your case as soon as possible to reduce lock time
                 sf_sock->time_lastused=time(NULL);
                 switch(sf_pkt->header.op_code){
-                    case STREAM_SF_PACKET_OP_CODE_SEND:{
+                    case VPN_PACKET_OP_CODE_SEND:{
                         if(client_connected == false)
                         {
                             log_it(L_WARNING, "Drop Packet! User not connected!"); // Client need send
@@ -564,7 +584,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                         log_it(L_INFO, "Send action from %d sock_id (sf_packet size %lu,  ch packet size %lu, have sent %d)"
                                     ,sf_sock->id,sf_pkt->header.op_data.data_size,pkt->hdr.size,ret);
                     }break;
-                case STREAM_SF_PACKET_OP_CODE_DISCONNECT:{
+                case VPN_PACKET_OP_CODE_DISCONNECT:{
                     log_it(L_INFO, "Disconnect action from %d sock_id",sf_sock->id);
 
                     pthread_mutex_lock(& ( CH_SF(ch)->mutex ));
@@ -653,7 +673,7 @@ void ch_sf_packet_in(stream_ch_t* ch , void* arg)
                         log_it(L_NOTICE, "Send Connected packet to User");
                         ch_vpn_pkt_t *pkt_out = (ch_vpn_pkt_t*) calloc(1,sizeof(pkt_out->header));
                         pkt_out->header.sock_id = remote_sock_id;
-                        pkt_out->header.op_code = STREAM_SF_PACKET_OP_CODE_CONNECTED;
+                        pkt_out->header.op_code = VPN_PACKET_OP_CODE_CONNECTED;
                         stream_ch_pkt_write(ch,'s',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                         free(pkt_out);
                         client_connected = true;
@@ -693,7 +713,7 @@ void stream_sf_disconnect(ch_vpn_socket_proxy_t * sf_sock)
     // Compise signal to disconnect to another side, with special opcode STREAM_SF_PACKET_OP_CODE_DISCONNECT
     ch_vpn_pkt_t * pkt_out;
     pkt_out = (ch_vpn_pkt_t*) calloc(1,sizeof(pkt_out->header)+1);
-    pkt_out->header.op_code=STREAM_SF_PACKET_OP_CODE_DISCONNECT;
+    pkt_out->header.op_code=VPN_PACKET_OP_CODE_DISCONNECT;
     pkt_out->header.sock_id=sf_sock->id;
     sf_sock->pkt_out[sf_sock->pkt_out_size]=pkt_out;
     sf_sock->pkt_out_size++;
@@ -756,7 +776,7 @@ void * ch_sf_thread(void * arg)
                             buf_size=ret;
                             ch_vpn_pkt_t * pout;
                             pout=sf->pkt_out[sf->pkt_out_size]=(ch_vpn_pkt_t *) calloc(1,buf_size+sizeof(pout->header));
-                            pout->header.op_code=STREAM_SF_PACKET_OP_CODE_RECV;
+                            pout->header.op_code=VPN_PACKET_OP_CODE_RECV;
                             pout->header.sock_id=sf->id;
                             pout->header.op_data.data_size=buf_size;
                             memcpy(pout->data,buf,buf_size);
@@ -870,7 +890,7 @@ void* ch_sf_thread_raw(void *arg)
 //                  HASH_DEL(CH_SF(ch)->socks,sf_sock);
             if( raw_client){ // Is present in hash table such destination address
                 ch_vpn_pkt_t *pkt_out = (ch_vpn_pkt_t*) calloc(1,sizeof(pkt_out->header)+read_ret);
-                pkt_out->header.op_code=STREAM_SF_PACKET_OP_CODE_RAW_RECV;
+                pkt_out->header.op_code=VPN_PACKET_OP_CODE_VPN_RECV;
                 pkt_out->header.sock_id=raw_server->tun_fd;
                 pkt_out->header.op_data.data_size=read_ret;
                 memcpy(pkt_out->data,tmp_buf,read_ret);
