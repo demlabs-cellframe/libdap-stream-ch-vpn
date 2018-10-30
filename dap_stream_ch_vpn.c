@@ -28,7 +28,7 @@
 
 #include "dap_common.h"
 
-#include "dap_server_client.h"
+#include "dap_client_remote.h"
 #include "dap_http_client.h"
 
 #include "stream.h"
@@ -98,7 +98,7 @@ typedef struct ch_vpn_socket_proxy{
     int sock;
     struct in_addr client_addr; // Used in raw L3 connections
     pthread_mutex_t mutex;
-    stream_ch_t * ch;
+    dap_stream_ch_t * ch;
 
     bool signal_to_delete;
     ch_vpn_pkt_t * pkt_out[100];
@@ -131,7 +131,7 @@ typedef struct dap_stream_ch_vpn
 typedef struct dap_stream_ch_vpn_remote_single{ //
      in_addr_t addr;
 //    pthread_mutex_t mutex;
-     stream_ch_t * ch;
+     dap_stream_ch_t * ch;
 
     uint64_t bytes_sent;
     uint64_t bytes_recieved;
@@ -181,10 +181,10 @@ void* ch_sf_thread_raw(void *arg);
 void ch_sf_tun_create();
 void ch_sf_tun_destroy();
 
-void ch_sf_new(stream_ch_t* ch , void* arg);
-void ch_sf_delete(stream_ch_t* ch , void* arg);
-void ch_sf_packet_in(stream_ch_t* ch , void* arg);
-void ch_sf_packet_out(stream_ch_t* ch , void* arg);
+void ch_sf_new(dap_stream_ch_t* ch , void* arg);
+void ch_sf_delete(dap_stream_ch_t* ch , void* arg);
+void ch_sf_packet_in(dap_stream_ch_t* ch , void* arg);
+void ch_sf_packet_out(dap_stream_ch_t* ch , void* arg);
 
 int ch_sf_raw_write(uint8_t op_code, const void * data, size_t data_size);
 
@@ -274,7 +274,7 @@ void ch_sf_tun_destroy()
  * @param ch
  * @param arg
  */
-void ch_sf_new(stream_ch_t* ch , void* arg)
+void ch_sf_new(dap_stream_ch_t* ch , void* arg)
 {
     ch->internal=calloc(1,sizeof(dap_stream_ch_vpn_t));
     dap_stream_ch_vpn_t * sf = CH_SF(ch);
@@ -287,7 +287,7 @@ void ch_sf_new(stream_ch_t* ch , void* arg)
  * @param ch
  * @param arg
  */
-void ch_sf_delete(stream_ch_t* ch , void* arg)
+void ch_sf_delete(dap_stream_ch_t* ch , void* arg)
 {
     log_it(L_DEBUG,"ch_sf_delete() for %s", ch->stream->conn->hostaddr);
     ch_vpn_socket_proxy_t * cur, *tmp;
@@ -338,13 +338,13 @@ void stream_sf_socket_delete(ch_vpn_socket_proxy_t * sf)
         free(sf);
 }
 
-void stream_sf_socket_ready_to_write(stream_ch_t * ch, bool is_ready)
+void stream_sf_socket_ready_to_write(dap_stream_ch_t * ch, bool is_ready)
 {
     pthread_mutex_lock(&ch->mutex);
     ch->ready_to_write=is_ready;
     if(is_ready)
         ch->stream->conn_http->state_write=DAP_HTTP_CLIENT_STATE_DATA;
-    dap_client_ready_to_write(ch->stream->conn,is_ready);
+    dap_client_remote_ready_to_write(ch->stream->conn,is_ready);
     pthread_mutex_unlock(&ch->mutex);
 
 }
@@ -425,7 +425,7 @@ int stream_sf_socket_write(ch_vpn_socket_proxy_t * sf, uint8_t op_code, const vo
  * @param ch
  * @param arg
  */
-void ch_sf_packet_in(stream_ch_t* ch , void* arg)
+void ch_sf_packet_in(dap_stream_ch_t* ch , void* arg)
 {
     stream_ch_pkt_t * pkt = (stream_ch_pkt_t *) arg;
  // log_it(L_DEBUG,"stream_sf_packet_in:  channel packet hdr size %lu ( last bytes 0x%02x 0x%02x 0x%02x 0x%02x ) ", pkt->hdr.size,
@@ -923,7 +923,7 @@ void* ch_sf_thread_raw(void *arg)
  * @param ch
  * @param arg
  */
-void ch_sf_packet_out(stream_ch_t* ch , void* arg)
+void ch_sf_packet_out(dap_stream_ch_t* ch , void* arg)
 {
     ch_vpn_socket_proxy_t * cur, *tmp;
     bool isSmthOut=false;
@@ -976,6 +976,6 @@ void ch_sf_packet_out(stream_ch_t* ch , void* arg)
     if(isSmthOut){
         ch->stream->conn_http->state_write=DAP_HTTP_CLIENT_STATE_DATA;
     }
-    dap_client_ready_to_write(ch->stream->conn ,isSmthOut);
+    dap_client_remote_ready_to_write(ch->stream->conn ,isSmthOut);
 
 }
