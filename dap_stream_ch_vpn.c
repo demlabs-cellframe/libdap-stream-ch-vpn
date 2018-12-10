@@ -897,7 +897,7 @@ void* ch_sf_thread_raw(void *arg)
                 stream_ch_pkt_write(raw_client->ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                 stream_sf_socket_ready_to_write(raw_client->ch,true);
             }else{
-                log_it(L_DEBUG,"No remote client for income IP packet with addr %s",inet_ntoa(in_daddr));
+                // log_it(L_DEBUG,"No remote client for income IP packet with addr %s",inet_ntoa(in_daddr));
             }
             pthread_mutex_unlock(& raw_server->clients_mutex );
         }
