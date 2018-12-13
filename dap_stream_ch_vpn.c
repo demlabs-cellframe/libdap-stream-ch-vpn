@@ -31,7 +31,7 @@
 #include "dap_client_remote.h"
 #include "dap_http_client.h"
 
-#include "stream.h"
+#include "dap_stream.h"
 #include "dap_stream_ch.h"
 #include "dap_stream_ch_proc.h"
 #include "dap_stream_ch_pkt.h"
@@ -213,7 +213,7 @@ int dap_stream_ch_vpn_init(const char* vpn_addr, const char* vpn_mask)
         pthread_cond_init(&sf_socks_cond,NULL);
         pthread_create(&sf_socks_raw_pid,NULL,ch_sf_thread_raw,NULL);
         pthread_create(&sf_socks_pid,NULL,ch_sf_thread,NULL);
-        stream_ch_proc_add('s',ch_sf_new,ch_sf_delete,ch_sf_packet_in,ch_sf_packet_out);
+        dap_stream_ch_proc_add('s',ch_sf_new,ch_sf_delete,ch_sf_packet_in,ch_sf_packet_out);
         return 0;
     }
     return 0;
@@ -427,7 +427,7 @@ int stream_sf_socket_write(ch_vpn_socket_proxy_t * sf, uint8_t op_code, const vo
  */
 void ch_sf_packet_in(dap_stream_ch_t* ch , void* arg)
 {
-    stream_ch_pkt_t * pkt = (stream_ch_pkt_t *) arg;
+    dap_stream_ch_pkt_t * pkt = (dap_stream_ch_pkt_t *) arg;
  // log_it(L_DEBUG,"stream_sf_packet_in:  channel packet hdr size %lu ( last bytes 0x%02x 0x%02x 0x%02x 0x%02x ) ", pkt->hdr.size,
  //        *((uint8_t *)pkt->data + pkt->hdr.size-4),*((uint8_t *)pkt->data + pkt->hdr.size-3)
  //        ,*((uint8_t *)pkt->data + pkt->hdr.size-2),*((uint8_t *)pkt->data + pkt->hdr.size-1)
