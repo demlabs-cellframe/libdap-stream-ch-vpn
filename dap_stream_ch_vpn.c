@@ -486,7 +486,7 @@ void ch_sf_packet_in(dap_stream_ch_t* ch , void* arg)
                     pkt_out->header.op_data.data_size=sizeof(n_addr)+sizeof(raw_server->client_addr_host);
                     memcpy(pkt_out->data,&n_addr,sizeof(n_addr));
                     memcpy(pkt_out->data+sizeof(n_addr),&raw_server->client_addr_host,sizeof(raw_server->client_addr_host));
-                    stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
+                    dap_stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                     stream_sf_socket_ready_to_write(ch,true);
 
                     //ch_sf_raw_write(n_addr.s_addr,STREAM_SF_PACKET_OP_CODE_RAW_L3_ADDR_REPLY,&n_addr,sizeof(n_addr));
@@ -496,7 +496,7 @@ void ch_sf_packet_in(dap_stream_ch_t* ch , void* arg)
                     pkt_out->header.sock_id=raw_server->tun_fd;
                     pkt_out->header.op_code=VPN_PACKET_OP_CODE_PROBLEM;
                     pkt_out->header.op_problem.code=VPN_PROBLEM_CODE_NO_FREE_ADDR;
-                    stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
+                    dap_stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                     stream_sf_socket_ready_to_write(ch,true);
                 }
             }break;
@@ -523,7 +523,7 @@ void ch_sf_packet_in(dap_stream_ch_t* ch , void* arg)
                     pkt_out->header.op_code=VPN_PACKET_OP_CODE_PROBLEM;
                     pkt_out->header.op_problem.code=VPN_PROBLEM_CODE_PACKET_LOST;
                     pkt_out->header.sock_id=raw_server->tun_fd;
-                    stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
+                    dap_stream_ch_pkt_write(ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                     stream_sf_socket_ready_to_write(ch,true);
                 }else{
                // log_it(L_DEBUG, "Raw IP packet daddr:%s saddr:%s  %u from %d bytes sent to tun/tap interface",
@@ -674,14 +674,14 @@ void ch_sf_packet_in(dap_stream_ch_t* ch , void* arg)
                         ch_vpn_pkt_t *pkt_out = (ch_vpn_pkt_t*) calloc(1,sizeof(pkt_out->header));
                         pkt_out->header.sock_id = remote_sock_id;
                         pkt_out->header.op_code = VPN_PACKET_OP_CODE_CONNECTED;
-                        stream_ch_pkt_write(ch,'s',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
+                        dap_stream_ch_pkt_write(ch,'s',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                         free(pkt_out);
                         client_connected = true;
                     }
                     stream_sf_socket_ready_to_write(ch,true);
                 }else{
                     log_it(L_INFO, "Can't connect to the remote server %s",addr_str);
-                            stream_ch_pkt_write_f(ch,'i',"sock_id=%d op_code=%c result=-1",sf_pkt->header.sock_id, sf_pkt->header.op_code);
+                            dap_stream_ch_pkt_write_f(ch,'i',"sock_id=%d op_code=%c result=-1",sf_pkt->header.sock_id, sf_pkt->header.op_code);
                             stream_sf_socket_ready_to_write(ch,true);
                         }
                     }else{
@@ -894,7 +894,7 @@ void* ch_sf_thread_raw(void *arg)
                 pkt_out->header.sock_id=raw_server->tun_fd;
                 pkt_out->header.op_data.data_size=read_ret;
                 memcpy(pkt_out->data,tmp_buf,read_ret);
-                stream_ch_pkt_write(raw_client->ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
+                dap_stream_ch_pkt_write(raw_client->ch,'d',pkt_out,pkt_out->header.op_data.data_size+sizeof(pkt_out->header));
                 stream_sf_socket_ready_to_write(raw_client->ch,true);
             }else{
                 // log_it(L_DEBUG,"No remote client for income IP packet with addr %s",inet_ntoa(in_daddr));
@@ -937,7 +937,7 @@ void ch_sf_packet_out(dap_stream_ch_t* ch , void* arg)
             for(i= 0;i<cur->pkt_out_size;i++){
                 ch_vpn_pkt_t * pout =cur->pkt_out[i];
                 if(pout) {
-                    if(stream_ch_pkt_write(ch,'d',pout,pout->header.op_data.data_size+sizeof(pout->header))){
+                    if(dap_stream_ch_pkt_write(ch,'d',pout,pout->header.op_data.data_size+sizeof(pout->header))){
                         isSmthOut=true;
                         free(pout);
                         cur->pkt_out[i]=NULL;
