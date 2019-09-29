@@ -979,7 +979,11 @@ static inline void  ch_sf_packet_ADDR_REQUEST( dap_stream_ch_t *ch, ch_vpn_pkt_t
   stream_sf_socket_ready_to_write( ch, true );
 
   log_it( L_WARNING, "ch_sf_packet_ADDR_REQUEST ok" );
-  Sleep(3000);
+#ifdef _WIN32
+  Sleep( 3000 );
+#else
+  sleep( 3 );
+#endif
 
   return;
 }
