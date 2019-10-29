@@ -279,20 +279,20 @@ typedef struct list_addr_element {
 
 } list_addr_element;
 
-list_addr_element *list_addr_head = NULL;
+static list_addr_element *list_addr_head = NULL;
 
-ch_vpn_socket_proxy_t *sf_socks = NULL;
-ch_vpn_socket_proxy_t *sf_socks_client = NULL;
+static ch_vpn_socket_proxy_t *sf_socks = NULL;
+static ch_vpn_socket_proxy_t *sf_socks_client = NULL;
 
-pthread_mutex_t sf_socks_mutex;
-pthread_cond_t  sf_socks_cond;
+static pthread_mutex_t sf_socks_mutex;
+static pthread_cond_t  sf_socks_cond;
 
-EPOLL_HANDLE sf_socks_epoll_fd;
+static EPOLL_HANDLE sf_socks_epoll_fd;
 
-pthread_t sf_socks_pid;
-pthread_t sf_socks_raw_pid;
+static pthread_t sf_socks_pid;
+static pthread_t sf_socks_raw_pid;
 
-vpn_local_network_t *raw_server;
+static vpn_local_network_t *raw_server;
 
 #ifdef _WIN32
   HANDLE hTerminateEvent = NULL;
