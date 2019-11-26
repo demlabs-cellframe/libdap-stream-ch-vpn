@@ -309,7 +309,7 @@ void  *ch_sf_thread_raw( void *arg );
 void  ch_sf_tun_create( );
 void  ch_sf_tun_destroy( );
 
-void  ch_sf_new( dap_stream_ch_t *ch , void *arg );
+void  ch_sf_client_new( dap_stream_ch_t *ch , void *arg );
 void  ch_sf_delete( dap_stream_ch_t *ch , void *arg );
 
 void  ch_sf_packet_in( dap_stream_ch_t *ch , void *arg );
@@ -346,7 +346,7 @@ int dap_stream_ch_vpn_init( const char *vpn_addr, const char *vpn_mask )
   pthread_create( &sf_socks_raw_pid, NULL, ch_sf_thread_raw, NULL );
   pthread_create( &sf_socks_pid,     NULL, ch_sf_thread,     NULL );
 
-  dap_stream_ch_proc_add( 's', ch_sf_new, 
+  dap_stream_ch_proc_add( 's', ch_sf_client_new,
                                ch_sf_delete, 
                                ch_sf_packet_in, 
                                ch_sf_packet_out 
@@ -707,7 +707,7 @@ void ch_sf_tun_destroy( void )
  * @param ch
  * @param arg
  */
-void ch_sf_new( dap_stream_ch_t *ch , void *arg )
+void ch_sf_client_new( dap_stream_ch_t *ch , void *arg )
 {
   dap_stream_ch_vpn_t *sf = calloc( 1, sizeof(dap_stream_ch_vpn_t) );
 
