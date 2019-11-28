@@ -10,6 +10,7 @@ if(WIN32)
   include_directories(../3rdparty/libjson-c/)
   include_directories(../3rdparty/curl/include/)
   include_directories(../3rdparty/libsqlite3/)
+  #include_directories(../sources/wepoll/)
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${VPN_SRCS})
